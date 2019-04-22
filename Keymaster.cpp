@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <iostream>
+
 #include "Keymaster.h"
 
 #include <android-base/logging.h>
@@ -23,6 +25,7 @@
 namespace android {
 namespace vold {
 
+using ::std::string;
 using ::android::hardware::hidl_string;
 using ::android::hardware::hidl_vec;
 using ::android::hardware::keymaster::V4_0::SecurityLevel;
@@ -115,6 +118,15 @@ Keymaster::Keymaster() {
     LOG(INFO) << "Using " << version.keymasterName << " from " << version.authorName
               << " for encryption.  Security level: " << toString(version.securityLevel)
               << ", HAL: " << mDevice->descriptor() << "/" << mDevice->instanceName();
+
+    std::string km_name(version.keymasterName);
+    if((km_name.find("OP-TEE Key")) != std::string::npos) {
+        LOG(INFO) << "OP-TEE Keymaster service ready!";
+    }
+    else {
+        LOG(INFO) << "OP-TEE Keymaster not ready, keep waiting.."; 
+        *this = Keymaster();
+    }
 }
 
 bool Keymaster::generateKey(const km::AuthorizationSet& inParams, std::string* key) {
@@ -182,6 +194,16 @@ KeymasterOperation Keymaster::begin(km::KeyPurpose purpose, const std::string& k
     auto keyBlob = km::support::blob2hidlVec(key);
     uint64_t mOpHandle;
     km::ErrorCode km_error;
+
+    std::cout << "############################" << std::endl;
+    std::cout << "VOLD Keymaster::begin key = " << key << std::endl;
+    std::cout << "VOLD Keymaster::begin purpose = " << std::to_string((unsigned int)purpose) << std::endl;
+    std::cout << "############################" << std::endl;
+
+    LOG(INFO) << "############################";
+    LOG(INFO) << "VOLD Keymaster::begin key = " << key;
+    LOG(INFO) << "VOLD Keymaster::begin purpose = " << std::to_string((unsigned int)purpose);
+    LOG(INFO) << "############################";
 
     auto hidlCb = [&](km::ErrorCode ret, const hidl_vec<km::KeyParameter>& _outParams,
                       uint64_t operationHandle) {
