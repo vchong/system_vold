@@ -120,12 +120,12 @@ Keymaster::Keymaster() {
               << ", HAL: " << mDevice->descriptor() << "/" << mDevice->instanceName();
 
     std::string km_name(version.keymasterName);
-    if((km_name.find("OP-TEE Key")) != std::string::npos) {
+    if((km_name.find("OP-TEE")) != std::string::npos) {
         LOG(INFO) << "OP-TEE Keymaster service ready!";
     }
     else {
         LOG(INFO) << "OP-TEE Keymaster not ready, keep waiting.."; 
-        *this = Keymaster();
+        Keymaster();
     }
 }
 
