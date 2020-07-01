@@ -115,6 +115,16 @@ Keymaster::Keymaster() {
     LOG(INFO) << "Using " << version.keymasterName << " from " << version.authorName
               << " for encryption.  Security level: " << toString(version.securityLevel)
               << ", HAL: " << mDevice->descriptor() << "/" << mDevice->instanceName();
+
+    std::string km_name(version.keymasterName);
+    if((km_name.find("OP-TEE Key")) != std::string::npos) {
+        LOG(INFO) << "OP-TEE Keymaster service ready!";
+    }
+    else {
+		LOG(INFO) << "OP-TEE Keymaster not ready, boot anyway..";
+        //LOG(INFO) << "OP-TEE Keymaster not ready, keep waiting..";
+        //Keymaster();
+    }
 }
 
 bool Keymaster::generateKey(const km::AuthorizationSet& inParams, std::string* key) {
@@ -259,6 +269,30 @@ int keymaster_compatibility_cryptfs_scrypt() {
     return dev.isSecure();
 }
 
+#include <iostream>
+#include <iomanip>
+
+static void hexdump2(unsigned char *ptr, unsigned buflen)
+{
+	unsigned char *buf = (unsigned char *)ptr;
+	unsigned i;
+	unsigned j;
+	for (i = 0; i < buflen; i += 16) {
+		std::cout << std::setfill('0') << std::setw(6) << std::right <<
+			std::hex << i;
+
+		for (j = 0; j < 16; j++) {
+			if (i + j < buflen)
+				std::cout << std::setfill('0') << std::setw(2) << std::right <<
+					std::hex << buf[i + j];
+			else
+				std::cout << "   ";
+		}
+
+		std::cout << std::endl;
+	}
+}
+
 static bool write_string_to_buf(const std::string& towrite, uint8_t* buffer, uint32_t buffer_size,
                                 uint32_t* out_size) {
     if (!buffer || !out_size) {
@@ -271,7 +305,10 @@ static bool write_string_to_buf(const std::string& towrite, uint8_t* buffer, uin
         return false;
     }
     memset(buffer, '\0', buffer_size);
+	std::cout << __func__ << " " << __LINE__ <<
+		" write_string_to_buf " << towrite << std::endl;
     std::copy(towrite.begin(), towrite.end(), buffer);
+	hexdump2(buffer, buffer_size);
     return true;
 }
 
@@ -340,6 +377,12 @@ KeymasterSignResult keymaster_sign_object_for_cryptfs_scrypt(
     std::string input(reinterpret_cast<const char*>(object), object_size);
     std::string output;
     KeymasterOperation op;
+
+	std::cout << __func__ << " " << __LINE__ <<
+		" keymaster_sign_object_for_cryptfs_scrypt" << std::endl;
+	std::cout << __func__ << " " << __LINE__ <<
+		" key " << key << " key.length() " << key.length() << std::endl;
+	hexdump2(const_cast<unsigned char*>(key_blob), key_blob_size);
 
     auto paramBuilder = km::AuthorizationSetBuilder().NoDigestOrPadding();
     while (true) {

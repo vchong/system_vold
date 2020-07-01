@@ -332,17 +332,63 @@ static int keymaster_check_compatibility() {
     return keymaster_compatibility_cryptfs_scrypt();
 }
 
+#include <iostream>
+#include <iomanip>
+
+#if 0
+static void dumpy(std::vector<uint8_t> input)
+{
+	//for (std::vector<char>::iterator i = input.begin(); i != input.end(); ++i)
+	//	std::cout << *i << ' ';
+
+	//Print in hex. Comment this out to print in decimal.
+	std::cout << std::hex << std::setfill('0') << std::setw(2);
+
+	std::copy(input.begin(),
+			input.end(),
+			std::ostream_iterator<int>(std::cout, " "));
+}
+#endif
+
+static void hexdump(unsigned char *ptr, unsigned buflen)
+{
+	unsigned char *buf = (unsigned char *)ptr;
+	unsigned i;
+	unsigned j;
+	for (i = 0; i < buflen; i += 16) {
+		std::cout << std::setfill('0') << std::setw(6) << std::right <<
+			std::hex << i;
+
+		for (j = 0; j < 16; j++) {
+			if (i + j < buflen)
+				std::cout << std::setfill('0') << std::setw(2) << std::right <<
+					std::hex << buf[i + j];
+			else
+				std::cout << "   ";
+		}
+
+		std::cout << std::endl;
+	}
+}
+
 /* Create a new keymaster key and store it in this footer */
 static int keymaster_create_key(struct crypt_mnt_ftr* ftr) {
     if (ftr->keymaster_blob_size) {
         SLOGI("Already have key");
+		std::cout << __func__ << " " << __LINE__ << " Already have key"
+			<< std::endl;
+		hexdump(ftr->keymaster_blob, ftr->keymaster_blob_size);
         return 0;
     }
+	std::cout << __func__ << " " << __LINE__ <<
+		" create_key_for_cryptfs_scrypt" << std::endl;
 
     int rc = keymaster_create_key_for_cryptfs_scrypt(
         RSA_KEY_SIZE, RSA_EXPONENT, KEYMASTER_CRYPTFS_RATE_LIMIT, ftr->keymaster_blob,
         KEYMASTER_BLOB_SIZE, &ftr->keymaster_blob_size);
     if (rc) {
+		std::cout << "keymaster_create_key_for_cryptfs_scrypt error"
+			<< std::endl;
         if (ftr->keymaster_blob_size > KEYMASTER_BLOB_SIZE) {
             SLOGE("Keymaster key blob too large");
             ftr->keymaster_blob_size = 0;
@@ -350,6 +396,12 @@ static int keymaster_create_key(struct crypt_mnt_ftr* ftr) {
         SLOGE("Failed to generate keypair");
         return -1;
     }
+
+	std::cout << __func__ << " " << __LINE__ <<
+		" keymaster_create_key_for_cryptfs_scrypt output:"
+		<< std::endl;
+	hexdump(ftr->keymaster_blob, ftr->keymaster_blob_size);
+
     return 0;
 }
 
